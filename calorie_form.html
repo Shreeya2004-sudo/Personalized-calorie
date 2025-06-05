@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calorie Tracker</title>
+</head>
+<body>
+  <h2>Calorie Tracker</h2>
+  <form method="POST" action="/predict">
+    <label>Age: <input type="number" name="age" required></label><br><br>
+    <label>Weight (kg): <input type="number" name="weight" required></label><br><br>
+    <label>Height (cm): <input type="number" name="height" required></label><br><br>
+    <label>Foods eaten (comma separated): <input type="text" name="foods" required></label><br><br>
+    <button type="submit">Check Calories</button>
+  </form>
+
+  {% if result %}
+    <h3>Calories Required: {{ result.required }}</h3>
+    <h3>Calories Consumed: {{ result.consumed }}</h3>
+    <h3>Status: {{ result.status }}</h3>
+  {% endif %}
+</body>
+</html>
