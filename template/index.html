@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <link rel="stylesheet" href="style.css" media="screen">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   </head>
   <body>
     <section class="relative" style="z-index: 39;margin-top:-70px;">
@@ -21,7 +21,9 @@
                     "Track your nutrition effortlessly with our comprehensive analysis tool,designed to help you achieve and maintain daily calorie objectives."
                   </pre>
                   <div class="flex md:inline-flex flex-col md:flex-row gap-4 mt-4">
+                    <a href="/calorie-form">
                     <button class="website-button w-full md:w-max transition-all lg" style="border-width: 2px;border-style:solid; box-shadow: none; font-family: var(--body-fontFamily); font-weight: var(--body-fontWeight, 500); font-style: var(--body-fontStyle); background-color: rgb(40,63,79); color:rgb(255,255,255); border-radius:8px; border-color: rgb(40,63,79);">Track Your Calories</button>
+                    </a>
                   </div>
                 </div>
                 <div class="flex-1 h-full transition-all duration-300 w-full lg:max-w-1/2">

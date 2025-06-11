@@ -1,48 +1,42 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, render_template
 import pandas as pd
-import numpy as np
-import joblib
 
 app = Flask(__name__)
 
-# Load trained ML model and food data
-model = joblib.load('calorie_model.pkl')
+# Load your CSV
 food_df = pd.read_csv('Indian_Food_Nutrition_Processing.csv')
 
-# Function to calculate calories based on food items
-def calculate_food_calories(food_items):
-    total = 0
-    for item in food_items:
-        item = item.strip().lower()
-        match = food_df[food_df['Food'].str.lower() == item]
-        if not match.empty:
-            total += match.iloc[0]['Calories_per_100g']
-    return total
-
 @app.route('/')
-def index():
-    return render_template('calorie_form.html')  # 🔁 Updated filename
+def home():
+    return render_template('index.html')  # home page
+
+@app.route('/calorie-form')
+def calorie_form():
+    return render_template('calorie_form.html')  # input form page
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    age = float(request.form['age'])
-    weight = float(request.form['weight'])
-    height = float(request.form['height'])
-    foods = request.form['foods'].split(',')
+    try:
+        foods = request.form.get('foods', '').lower().split(',')
+        selected_foods = [food.strip() for food in foods]
 
-    # Predict calorie need
-    predicted = model.predict(np.array([[age, weight, height]]))[0]
+        total_calories = 0
+        found_items = []
 
-    # Calculate consumed calories
-    consumed = calculate_food_calories(foods)
+        for food in selected_foods:
+            match = food_df[food_df['Food'].str.lower() == food]
+            if not match.empty:
+                calories = match['Calories(kcal)'].values[0]
+                total_calories += calories
+                found_items.append(f"{food.title()}: {calories} kcal")
+            else:
+                found_items.append(f"{food.title()}: Not found")
 
-    result = {
-        "required": round(predicted, 2),
-        "consumed": round(consumed, 2),
-        "status": "You need more calories!" if consumed < predicted else "You're good!"
-    }
-
-    return render_template('calorie_form.html', result=result)  # 🔁 Updated filename
+        result_text = "\n".join(found_items) + f"\n\nTotal Calories: {total_calories:.2f} kcal"
+        return render_template('result.html', result=result_text)
+    
+    except Exception as e:
+        return render_template('result.html', result=f"Error occurred: {str(e)}")
 
 if __name__ == '__main__':
     app.run(debug=True)

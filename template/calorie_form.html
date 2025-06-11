@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calorie Intake Calculator</title>
+  <style>
+    /* Default Design Guidelines - Minimal Elegant */
+    :root {
+      --bg-color: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --button-bg: #000000;
+      --button-hover-bg: #333333;
+      --border-radius: 0.75rem;
+      --font-heading: 'Arial Black', Arial, sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --input-border: #d1d5db;
+      --input-focus-border: #2563eb;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--bg-color);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    main.card {
+      max-width: 600px;
+      width: 100%;
+      background: var(--bg-color);
+      padding: 3rem 2.5rem 3rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    h1 {
+      margin: 0;
+      color: var(--text-primary);
+      font-family: var(--font-heading);
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    label {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text-primary);
+      user-select: none;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      font-size: 1.125rem;
+      font-family: var(--font-body);
+      border: 1.5px solid var(--input-border);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    input[type="text"]::placeholder,
+    input[type="number"]::placeholder {
+      color: var(--text-secondary);
+      opacity: 1;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
+      background-color: #f0f8ff;
+    }
+    button {
+      padding: 1rem 0;
+      border: none;
+      border-radius: 0.75rem;
+      background-color: var(--button-bg);
+      color: white;
+      font-weight: 700;
+      font-size: 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    button:hover,
+    button:focus {
+      background-color: var(--button-hover-bg);
+      outline: none;
+    }
+    #result {
+      background-color: #fafafa;
+      padding: 1.5rem 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.05);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1.125rem;
+      white-space: pre-line;
+      text-align: center;
+      user-select: text;
+      line-height: 1.4;
+    }
+    @media (max-width: 460px) {
+      main.card {
+        padding: 2rem 1.5rem 2.5rem;
+      }
+      h1 {
+        font-size: 2.25rem;
+      }
+      button {
+        font-size: 1.125rem;
+      }
+      #result {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-label="Calorie Intake Calculator">
+    <h1>Calorie Intake Calculator</h1>
+    <form method="POST" action="/predict" novalidate>
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required autocomplete="username" placeholder="Enter your username" />
+
+      <label for="age">Age (years)</label>
+      <input id="age" name="age" type="number" min="1" max="120" required placeholder="e.g., 30" />
+
+      <label for="weight">Weight (kg)</label>
+      <input id="weight" name="weight" type="number" min="1" max="500" step="0.1" required placeholder="e.g., 70.5" />
+
+      <label for="height">Height (cm)</label>
+      <input id="height" name="height" type="number" min="30" max="250" step="0.1" required placeholder="e.g., 175" />
+
+      <label for="foods">Food Consumed <small>(comma separated)</small></label>
+      <input id="foods" name="foods" type="text" autocomplete="off" required placeholder="e.g., apple, sandwich" />
+
+      <label for="mealType">Meal Type</label>
+      <select id="mealType" name="mealType" required aria-required="true">
+        <option value="" disabled selected>Select a meal</option>
+        <option value="breakfast">Breakfast</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+        <option value="snacks">Snacks</option>
+      </select>
+    
+      <button type="submit">Calculate Calories</button>
+  
+    </form>
+
+    
+  </main>
+</body>
+</html>
