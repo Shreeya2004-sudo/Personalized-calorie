@@ -17,9 +17,17 @@ def calorie_form():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Get user food input
         foods = request.form.get('foods', '').lower().split(',')
         selected_foods = [food.strip() for food in foods]
 
+        # Get user info
+        age = int(request.form.get('age', 0))
+        gender = request.form.get('gender', '').lower()
+        weight = float(request.form.get('weight', 0))
+        height = float(request.form.get('height', 0))
+
+        # Calculate consumed calories
         total_calories = 0
         found_items = []
 
@@ -32,9 +40,23 @@ def predict():
             else:
                 found_items.append(f"{food.title()}: Not found")
 
-        result_text = "\n".join(found_items) + f"\n\nTotal Calories: {total_calories:.2f} kcal"
+        # Estimate required calories using Mifflin-St Jeor BMR formula
+        if gender == 'male':
+            required_calories = 10 * weight + 6.25 * height - 5 * age + 5
+        elif gender == 'female':
+            required_calories = 10 * weight + 6.25 * height - 5 * age - 161
+        else:
+            required_calories = 0
+
+        # Result to display
+        result_text = (
+            "\n".join(found_items) +
+            f"\n\nTotal Calories Consumed: {total_calories:.2f} kcal" +
+            f"\nEstimated Daily Requirement: {required_calories:.2f} kcal"
+        )
+
         return render_template('result.html', result=result_text)
-    
+
     except Exception as e:
         return render_template('result.html', result=f"Error occurred: {str(e)}")
 
