@@ -26,7 +26,7 @@ def predict():
         for food in selected_foods:
             match = food_df[food_df['Dish Name'].str.lower() == food]
             if not match.empty:
-                calories = match['Calories(kcal)'].values[0]
+                calories = match['Calories (kcal)'].values[0]
                 total_calories += calories
                 found_items.append(f"{food.title()}: {calories} kcal")
             else:
