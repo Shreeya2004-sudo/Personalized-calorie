@@ -45,6 +45,7 @@ def predict():
         # Save to meal_logs.csv
         new_data = {
             'username': username,
+            'age':age,
             'meal_type': meal_type,
             'dish_name': ", ".join(selected_foods),
             'calories': total_calories,
@@ -54,6 +55,9 @@ def predict():
         new_df = pd.DataFrame([new_data])
         try:
             meal_log_df = pd.read_csv('meal_logs.csv')
+            expected_columns = ['username', 'age', 'meal_type', 'dish_name', 'calories', 'timestamp']
+            if list(meal_log_df.columns) != expected_columns:
+              raise ValueError("meal_logs.csv has wrong columns. Delete or fix the file.")
             new_df.to_csv('meal_logs.csv', mode='a', header=False, index=False)
         except FileNotFoundError:
             new_df.to_csv('meal_logs.csv', mode='w', header=True, index=False)
