@@ -8,6 +8,13 @@ app = Flask(__name__)
 # Load your CSV
 food_df = pd.read_csv('Indian_Food_Nutrition_Processing.csv')
 
+# Convert 'Calories (kcal)' to numeric on load
+food_df['Calories (kcal)'] = pd.to_numeric(food_df['Calories (kcal)'], errors='coerce')
+
+# --- NEW ADDITION: Standardize 'Dish Name' column in your DataFrame ---
+food_df['Dish Name'] = food_df['Dish Name'].str.strip().str.lower()
+# --- END NEW ADDITION ---
+
 @app.route('/')
 def home():
     return render_template('index.html')  # home page
@@ -23,7 +30,8 @@ def predict():
         username = request.form.get('username', '').strip().lower()
         meal_type = request.form.get('meal_type', '').strip().lower()
         foods = request.form.get('foods', '').lower().split(',')
-        selected_foods = [food.strip() for food in foods]
+        selected_foods = [food.strip() for food in foods] # User input is already stripped and lowercased here
+
         age = int(request.form.get('age', 0))
         gender = request.form.get('gender', '').lower()
         weight = float(request.form.get('weight', 0))
@@ -33,14 +41,22 @@ def predict():
         total_calories = 0
         found_items = []
 
-        for food in selected_foods:
-            match = food_df[food_df['Dish Name'].str.lower() == food]
+        for food_input in selected_foods: # Rename 'food' to 'food_input' for clarity
+            # --- MODIFIED LINE FOR BETTER MATCHING ---
+            # Now we are matching the already stripped and lowercased user input
+            # with the already stripped and lowercased 'Dish Name' column in food_df
+            match = food_df[food_df['Dish Name'] == food_input]
+            # --- END MODIFIED LINE ---
+
             if not match.empty:
                 calories = match['Calories (kcal)'].values[0]
-                total_calories += calories
-                found_items.append(f"{food.title()}: {calories} kcal")
+                if pd.isna(calories):
+                    found_items.append(f"{food_input.title()}: Calories not available")
+                else:
+                    total_calories += calories
+                    found_items.append(f"{food_input.title()}: {calories} kcal")
             else:
-                found_items.append(f"{food.title()}: Not found")
+                found_items.append(f"{food_input.title()}: Not found")
 
         # Save to meal_logs.csv
         new_data = {
@@ -57,7 +73,7 @@ def predict():
             meal_log_df = pd.read_csv('meal_logs.csv')
             expected_columns = ['username', 'age', 'meal_type', 'dish_name', 'calories', 'timestamp']
             if list(meal_log_df.columns) != expected_columns:
-              raise ValueError("meal_logs.csv has wrong columns. Delete or fix the file.")
+                raise ValueError("meal_logs.csv has wrong columns. Delete or fix the file.")
             new_df.to_csv('meal_logs.csv', mode='a', header=False, index=False)
         except FileNotFoundError:
             new_df.to_csv('meal_logs.csv', mode='w', header=True, index=False)
@@ -65,6 +81,8 @@ def predict():
         # Load logs and calculate today's total
         meal_log_df = pd.read_csv('meal_logs.csv')
         meal_log_df['timestamp'] = pd.to_datetime(meal_log_df['timestamp'])
+        meal_log_df['calories'] = pd.to_numeric(meal_log_df['calories'], errors='coerce')
+
 
         today = datetime.now().date()
         user_today_meals = meal_log_df[
