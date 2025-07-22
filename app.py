@@ -99,16 +99,35 @@ def predict():
             required_calories = 10 * weight + 6.25 * height - 5 * age - 161
         else:
             required_calories = 0
+        # Calculate BMI
+        height_m = height / 100  # convert cm to meters
+        if height_m > 0:
+          bmi = round(weight / (height_m ** 2), 2)
+        else:
+          bmi = 0
+
+        # Classify BMI
+        if bmi < 18.5:
+          bmi_category = "Underweight"
+        elif 18.5 <= bmi < 25:
+          bmi_category = "Normal"
+        elif 25 <= bmi < 30:
+          bmi_category = "Overweight"
+        else:
+          bmi_category = "Obese"
+
 
         # Final result
         result_text = (
-            "\n".join(found_items) +
-            f"\n\nTotal Calories for this Meal: {total_calories:.2f} kcal" +
-            f"\nCumulative Calories Today: {total_today_calories:.2f} kcal" +
-            f"\nEstimated Daily Requirement: {required_calories:.2f} kcal"
+           "\n".join(found_items) +
+           f"\n\nTotal Calories for this Meal: {total_calories:.2f} kcal" +
+           f"\nCumulative Calories Today: {total_today_calories:.2f} kcal" +
+           f"\nEstimated Daily Requirement: {required_calories:.2f} kcal" +
+           f"\n\nYour BMI: {bmi:.2f} ({bmi_category})"
         )
 
-        return render_template('result.html', result=result_text)
+
+        return render_template('result.html', result=result_text,bmi_category=bmi_category)
 
     except Exception as e:
         return render_template('result.html', result=f"Error occurred: {str(e)}")
