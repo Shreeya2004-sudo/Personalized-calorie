@@ -8,6 +8,7 @@ app = Flask(__name__)
 # Load your CSV
 food_df = pd.read_csv('Indian_Food_Nutrition_Processing.csv')
 
+
 # Convert 'Calories (kcal)' to numeric on load
 food_df['Calories (kcal)'] = pd.to_numeric(food_df['Calories (kcal)'], errors='coerce')
 
@@ -31,7 +32,7 @@ def predict():
         meal_type = request.form.get('meal_type', '').strip().lower()
         foods = request.form.get('foods', '').lower().split(',')
         selected_foods = [food.strip() for food in foods] # User input is already stripped and lowercased here
-
+        
         age = int(request.form.get('age', 0))
         gender = request.form.get('gender', '').lower()
         weight = float(request.form.get('weight', 0))
@@ -99,6 +100,30 @@ def predict():
             required_calories = 10 * weight + 6.25 * height - 5 * age - 161
         else:
             required_calories = 0
+
+        ideal_meal_split = {
+           'breakfast': 0.25,
+           'lunch': 0.35,
+           'dinner': 0.30,
+           'snacks': 0.10
+        }
+        print("Form data received:", request.form)  # NEW
+        print(f"[DEBUG] Meal Type Received: '{meal_type}'")  # Already added
+        meal_type = request.form.get('meal_type', '').strip().lower()
+
+        if meal_type not in ideal_meal_split:
+          return render_template('result.html', result=f"⚠️ Unknown meal type received: '{meal_type}'. Please select a valid option.")
+        ideal_this_meal = required_calories * ideal_meal_split[meal_type]
+        
+        if total_calories > ideal_this_meal:
+           meal_feedback = f"⚠️ You consumed {total_calories:.2f} kcal in {meal_type.title()}, which is above the recommended {ideal_this_meal:.2f} kcal. Consider reducing intake."
+        elif total_calories < ideal_this_meal * 0.8:
+           meal_feedback = f"🔔 Your {meal_type.title()} calories ({total_calories:.2f} kcal) are quite low. Try including more nutrient-rich food."
+        else:
+           meal_feedback = f"✅ Your {meal_type.title()} calories are within the recommended range."
+
+
+
         # Calculate BMI
         height_m = height / 100  # convert cm to meters
         if height_m > 0:
@@ -115,19 +140,26 @@ def predict():
           bmi_category = "Overweight"
         else:
           bmi_category = "Obese"
+        
+
+
 
 
         # Final result
         result_text = (
-           "\n".join(found_items) +
-           f"\n\nTotal Calories for this Meal: {total_calories:.2f} kcal" +
-           f"\nCumulative Calories Today: {total_today_calories:.2f} kcal" +
-           f"\nEstimated Daily Requirement: {required_calories:.2f} kcal" +
-           f"\n\nYour BMI: {bmi:.2f} ({bmi_category})"
+          "\n".join(found_items) +
+          f"\n\nTotal Calories for this Meal: {total_calories:.2f} kcal" +
+          f"\nRecommended for {meal_type.title()}: {ideal_this_meal:.2f} kcal" +
+          f"\n{meal_feedback}" +
+          f"\n\nTotal Calories Today: {total_today_calories:.2f} kcal" +
+          f"\nEstimated Daily Requirement: {required_calories:.2f} kcal" +
+          f"\n\nYour BMI: {bmi:.2f} ({bmi_category})"
         )
 
 
-        return render_template('result.html', result=result_text,bmi_category=bmi_category)
+        return render_template('result.html', result=result_text,bmi_category=bmi_category) # Pass to HTML
+
+
 
     except Exception as e:
         return render_template('result.html', result=f"Error occurred: {str(e)}")
