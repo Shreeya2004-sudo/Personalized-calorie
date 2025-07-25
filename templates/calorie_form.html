@@ -139,7 +139,56 @@
         font-size: 1rem;
       }
     }
-  </style>
+ 
+    /* NEW CSS for dynamic food inputs */
+    .food-item-group {
+        display: flex;
+        gap: 0.5rem; /* Space between food name and quantity */
+        align-items: flex-end; /* Align labels/inputs at the bottom */
+        margin-bottom: 0.75rem; /* Space between each food item group */
+        flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    }
+    .food-item-group .input-wrapper {
+        flex: 1; /* Allows inputs to grow */
+        min-width: 120px; /* Minimum width for inputs before wrapping */
+    }
+    .food-item-group label {
+        display: block; /* Make labels take full width above input */
+        margin-bottom: 0.25rem;
+    }
+    .food-item-group input {
+        margin-top: 0; /* Remove default margin */
+    }
+    .remove-food-btn {
+        background-color: #dc3545; /* Red color for remove button */
+        color: white;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: background-color 0.3s ease;
+        height: 48px; /* Match height of other inputs for alignment */
+        line-height: 1; /* Center text vertically */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; /* Prevent button from shrinking */
+    }
+    .remove-food-btn:hover {
+        background-color: #c82333;
+    }
+    #addFoodBtn {
+        background-color: #28a745; /* Green color for add button */
+        margin-top: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+    #addFoodBtn:hover {
+        background-color: #218838;
+    }
+
+ </style>
 </head>
 <body>
   <main class="card" role="main" aria-label="Calorie Intake Calculator">
@@ -163,10 +212,20 @@
       <label for="height">Height (cm)</label>
       <input id="height" name="height" type="number" min="30" max="250" step="0.1" required placeholder="e.g., 175" />
 
-      <label for="foods">Food Consumed <small>(comma separated)</small></label>
-      <input id="foods" name="foods" type="text" autocomplete="off" required placeholder="e.g., apple, sandwich" />
-
-
+      <h3>Food Consumed</h3>
+      <div id="food-items-container">
+        <div class="food-item-group">
+            <div class="input-wrapper">
+                <label>Food Name</label>
+                <input type="text" name="food_name" placeholder="e.g., apple" required />
+            </div>
+            <div class="input-wrapper">
+                <label>Quantity (g)</label>
+                <input type="number" name="food_quantity" min="1" step="0.1" placeholder="e.g., 150" required />
+            </div>
+        </div>
+      </div>
+      <button type="button" id="addFoodBtn">Add Another Food Item</button>
       <label for="meal_type">Select Meal Type:</label>
       <select name="meal_type" required>
         <option value="">--Select--</option>
@@ -184,5 +243,39 @@
 
     
   </main>
+
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addFoodBtn = document.getElementById('addFoodBtn');
+        const foodItemsContainer = document.getElementById('food-items-container');
+        
+        // Function to create a new food item input group
+        function createFoodItemGroup() {
+            const newFoodGroup = document.createElement('div');
+            newFoodGroup.classList.add('food-item-group');
+            newFoodGroup.innerHTML = `
+                <div class="input-wrapper">
+                    <label>Food Name</label>
+                    <input type="text" name="food_name" placeholder="e.g., banana" required />
+                </div>
+                <div class="input-wrapper">
+                    <label>Quantity (g)</label>
+                    <input type="number" name="food_quantity" min="1" step="0.1" placeholder="e.g., 100" required />
+                </div>
+                <button type="button" class="remove-food-btn">X</button>
+            `;
+            foodItemsContainer.appendChild(newFoodGroup);
+
+            // Add event listener to the new remove button
+            newFoodGroup.querySelector('.remove-food-btn').addEventListener('click', function() {
+                foodItemsContainer.removeChild(newFoodGroup);
+            });
+        }
+
+        addFoodBtn.addEventListener('click', createFoodItemGroup);
+    });
+  </script>
 </body>
 </html>
