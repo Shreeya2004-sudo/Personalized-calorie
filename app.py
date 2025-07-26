@@ -139,17 +139,17 @@ def predict():
         # print(f"[DEBUG] Meal Type Received: '{meal_type}'") # Commented out
 
         if meal_type not in ideal_meal_split:
-            return render_template('result.html', result=f"鈿狅笍 Unknown meal type received: '{meal_type}'. Please select a valid option.")
+            return render_template('result.html', result=f"Unknown meal type received: '{meal_type}'. Please select a valid option.")
         
         ideal_this_meal = required_calories * ideal_meal_split[meal_type]
         
         # Feedback on meal
         if total_calories > ideal_this_meal:
-           meal_feedback = f"鈿狅笍 You consumed {total_calories:.2f} kcal in {meal_type.title()}, which is above the recommended {ideal_this_meal:.2f} kcal for this meal. Consider reducing intake."
+           meal_feedback = f" You consumed {total_calories:.2f} kcal in {meal_type.title()}, which is above the recommended {ideal_this_meal:.2f} kcal for this meal. Consider reducing intake."
         elif total_calories < ideal_this_meal * 0.8:
-           meal_feedback = f"馃敂 Your {meal_type.title()} calories ({total_calories:.2f} kcal) are quite low compared to the recommended {ideal_this_meal:.2f} kcal. Try including more nutrient-rich food."
+           meal_feedback = f" Your {meal_type.title()} calories ({total_calories:.2f} kcal) are quite low compared to the recommended {ideal_this_meal:.2f} kcal. Try including more nutrient-rich food."
         else:
-           meal_feedback = f"鉁� Your {meal_type.title()} calories ({total_calories:.2f} kcal) are within the recommended range ({ideal_this_meal:.2f} kcal)."
+           meal_feedback = f" Your {meal_type.title()} calories ({total_calories:.2f} kcal) are within the recommended range ({ideal_this_meal:.2f} kcal)."
 
         # Calculate BMI
         height_m = height / 100
