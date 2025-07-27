@@ -1,12 +1,110 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
+import numpy as np
 import pandas as pd
-from datetime import datetime
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 import os
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LinearRegression
+import csv
+from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 app = Flask(__name__)
 
 # Load your CSV
 food_df = pd.read_csv('Indian_Food_Nutrition_Processing.csv')
+
+def save_prediction(username, dish_name, predicted_calories, meal_type):
+    current_date = datetime.now().date()
+    timestamp = datetime.now()
+
+    # Write to user_meal_logs.csv (original detailed log)
+    with open('user_meal_logs.csv', 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([username, current_date, dish_name, round(predicted_calories, 2), meal_type])
+
+    # Also write to meal_logs.csv for graph generation
+    with open('meal_logs.csv', 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([username, timestamp, dish_name, round(predicted_calories, 2), meal_type])
+
+
+#graph representation
+
+def generate_weekly_graph(username):
+    try:
+        df = pd.read_csv("user_meal_logs.csv")
+        df.columns = df.columns.str.strip()
+
+        # Filter by username
+        df = df[df["Username"] == username]
+        if df.empty:
+            print("No data found for user.")
+            return None
+
+        # Normalize MealType and enforce known categories
+        df["MealType"] = df["MealType"].str.strip().str.lower().str.capitalize()
+        valid_meals = ["Breakfast", "Lunch", "Dinner", "Snacks"]
+        df = df[df["MealType"].isin(valid_meals)]
+
+        # Convert Date and Calories
+        df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
+        df["Calories"] = pd.to_numeric(df["Calories"], errors='coerce')
+        df.dropna(subset=["Date", "Calories"], inplace=True)
+
+        # Limit to last 7 days
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        one_week_ago = today - timedelta(days=6)
+        df = df[(df["Date"] >= one_week_ago) & (df["Date"] <= today)]
+
+        if df.empty:
+            print("No data for the past 7 days.")
+            return None
+
+        # Group by Date and MealType
+        df["Date"] = df["Date"].dt.date
+        grouped = df.groupby(["Date", "MealType"])["Calories"].sum().unstack(fill_value=0)
+
+        # Ensure all 7 dates exist
+        all_days = pd.date_range(end=today, periods=7).date
+        grouped = grouped.reindex(all_days, fill_value=0)
+
+        # Ensure all meal types are present
+        for meal in valid_meals:
+            if meal not in grouped.columns:
+                grouped[meal] = 0
+        grouped = grouped[valid_meals]
+
+        # Plot grouped bar chart
+        plt.figure(figsize=(10, 6))
+        bar_width = 0.2
+        dates = grouped.index.astype(str)
+        x = np.arange(len(dates))
+
+        for i, meal in enumerate(valid_meals):
+            plt.bar(x + i * bar_width, grouped[meal], width=bar_width, label=meal)
+
+        plt.title("Weekly Calorie Intake by Meal")
+        plt.xlabel("Date")
+        plt.ylabel("Calories")
+        plt.xticks(x + bar_width * 1.5, dates, rotation=45)
+        plt.legend()
+        plt.tight_layout()
+
+        # Save plot
+        graph_path = f'static/weekly_graph_{username}.png'
+        plt.savefig(graph_path)
+        plt.close()
+        return graph_path
+
+    except Exception as e:
+        print(f"Error generating weekly graph: {e}")
+        return None
+
 
 
 # Convert 'Calories (kcal)' to numeric on load
@@ -14,6 +112,23 @@ food_df['Calories (kcal)'] = pd.to_numeric(food_df['Calories (kcal)'], errors='c
 
 # Standardize 'Dish Name' column in your DataFrame
 food_df['Dish Name'] = food_df['Dish Name'].str.strip().str.lower()
+
+# Clean and train ML model
+train_df = food_df.dropna(subset=['Dish Name', 'Calories (kcal)'])
+train_df = train_df[train_df['Calories (kcal)'] > 0]
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(train_df['Dish Name'])
+y = train_df['Calories (kcal)']
+
+model = LinearRegression()
+model.fit(X, y)
+
+def predict_calories_with_model(dish_name):
+    vector = vectorizer.transform([dish_name])
+    predicted = model.predict(vector)[0]
+    return round(predicted, 2)
+
 
 @app.route('/')
 def home():
@@ -25,165 +140,108 @@ def calorie_form():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    try:
-        # Get user input for personal details
-        username = request.form.get('username', '').strip().lower()
-        meal_type = request.form.get('meal_type', '').strip().lower()
-        age = int(request.form.get('age', 0))
-        gender = request.form.get('gender', '').lower()
-        weight = float(request.form.get('weight', 0))
-        height = float(request.form.get('height', 0))
+    username = request.form['username']
+    age = int(request.form['age'])
+    gender = request.form['gender']
+    weight = float(request.form['weight'])
+    height = float(request.form['height'])
+    meal_type = request.form['meal_type'].lower()
 
-        # --- MODIFICATION START: Get lists of food names and quantities ---
-        # Use getlist() to retrieve all values for inputs with the same name
-        food_names_list = request.form.getlist('food_name')
-        food_quantities_list = request.form.getlist('food_quantity')
-        
-        total_calories = 0
-        found_items_display = [] # For display on the result page
-        logged_food_entries = [] # For saving to meal_logs.csv
+    food_names = request.form.getlist('food_name')
+    food_quantities = request.form.getlist('food_quantity')
 
-        # Iterate through the lists of food names and quantities
-        # We iterate up to the length of the shorter list to avoid index errors
-        for i in range(min(len(food_names_list), len(food_quantities_list))):
-            food_name_input = food_names_list[i].strip()
-            quantity_str_input = food_quantities_list[i].strip()
-            
-            # Skip empty food names, but still process if quantity is missing
-            if not food_name_input:
-                continue
+    total_calories = 0
+    log_lines = []
 
-            # Standardize food name for lookup
-            food_name_lookup = food_name_input.lower()
-            
-            # Try converting quantity to float
-            quantity_grams = None
-            try:
-                if quantity_str_input: # Check if string is not empty
-                    quantity_grams = float(quantity_str_input)
-            except ValueError:
-                # quantity_grams remains None if conversion fails
-                pass 
+    # Step 1: Calculate recommended daily calorie intake using Mifflin-St Jeor Equation
+    if gender.lower() == 'male':
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5
+    else:
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161
+    # Assuming sedentary activity level
+    recommended_cal = round(bmr * 1.2, 2)  # 1.2 for sedentary, 1.55 for moderate, 1.9 for active
 
-            # Prepare for logging (original case for display, quantity as provided)
-            logged_food_entries.append(f"{food_name_input} ({quantity_str_input}g)")
 
-            # Lookup food in DataFrame
-            match = food_df[food_df['Dish Name'] == food_name_lookup]
-            
-            if not match.empty:
-                calories_per_100g = match['Calories (kcal)'].values[0]
-                
-                if pd.isna(calories_per_100g):
-                    found_items_display.append(f"{food_name_input} ({quantity_str_input}g): Calories not available in database.")
-                elif quantity_grams is not None and quantity_grams > 0:
-                    calculated_calories = (calories_per_100g / 100) * quantity_grams
-                    total_calories += calculated_calories
-                    found_items_display.append(f"{food_name_input} ({quantity_grams:.0f}g): {calculated_calories:.2f} kcal")
-                else:
-                    # Case: Food found, but quantity is invalid or 0
-                    found_items_display.append(f"{food_name_input}: Invalid quantity '{quantity_str_input}'. Calories not calculated for this item.")
-            else:
-                found_items_display.append(f"{food_name_input}: Not found in database.")
-        # --- MODIFICATION END ---
+    # Step 2: Recommended calorie split by meal
+    recommended_split = {
+        'Breakfast': round(recommended_cal * 0.25, 2),
+        'Lunch': round(recommended_cal * 0.35, 2),
+        'Dinner': round(recommended_cal * 0.30, 2),
+        'Snacks': round(recommended_cal * 0.10, 2)
+    }
 
-        # Save to meal_logs.csv
-        new_data = {
-            'username': username,
-            'age': age,
-            'meal_type': meal_type,
-            'dish_name': ", ".join(logged_food_entries), # Use the prepared list for logging
-            'calories': total_calories,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
+    # Initialize consumed calorie split
+    consumed_split = {
+        "breakfast": 0,
+        "lunch": 0,
+        "dinner": 0
+    }
 
-        new_df = pd.DataFrame([new_data])
-        try:
-            meal_log_df = pd.read_csv('meal_logs.csv')
-            expected_columns = ['username', 'age', 'meal_type', 'dish_name', 'calories', 'timestamp']
-            if list(meal_log_df.columns) != expected_columns:
-                return render_template('result.html', result="Error: meal_logs.csv has unexpected columns. Please delete or fix the file to continue.")
-            new_df.to_csv('meal_logs.csv', mode='a', header=False, index=False)
-        except FileNotFoundError:
-            new_df.to_csv('meal_logs.csv', mode='w', header=True, index=False)
+    # Normalize meal_type for consistency
+    meal_type_cap = meal_type.capitalize()
 
-        # Load logs and calculate today's total
-        meal_log_df = pd.read_csv('meal_logs.csv')
-        meal_log_df['timestamp'] = pd.to_datetime(meal_log_df['timestamp'])
-        meal_log_df['calories'] = pd.to_numeric(meal_log_df['calories'], errors='coerce')
+    for name, qty in zip(food_names, food_quantities):
+        qty = float(qty)
+        match = food_df[food_df['Dish Name'].str.lower() == name.strip().lower()]
 
-        today = datetime.now().date()
-        user_today_meals = meal_log_df[
-            (meal_log_df['username'] == username) &
-            (meal_log_df['timestamp'].dt.date == today)
-        ]
-
-        total_today_calories = user_today_meals['calories'].sum()
-
-        # Estimate required calories (BMR - Mifflin-St Jeor Equation)
-        if gender == 'male':
-            required_calories = 10 * weight + 6.25 * height - 5 * age + 5
-        elif gender == 'female':
-            required_calories = 10 * weight + 6.25 * height - 5 * age - 161
+        if not match.empty:
+            row = match.iloc[0]
+            base_cal = row['Calories (kcal)']
+            predicted_cal = base_cal * (qty / 100)
+            log_lines.append(f"{name} ({qty}g): {predicted_cal:.2f} kcal")
         else:
-            required_calories = 0 
+            predicted_cal = predict_calories_with_model(name)
+            log_lines.append(f"{name} ({qty}g): {predicted_cal:.2f} kcal (estimated)")
 
-        ideal_meal_split = {
-           'breakfast': 0.25,
-           'lunch': 0.35,
-           'dinner': 0.30,
-           'snacks': 0.10
-        }
-        
-        # print("Form data received:", request.form) # Commented out for cleaner console, uncomment if needed
-        # print(f"[DEBUG] Meal Type Received: '{meal_type}'") # Commented out
+        total_calories += predicted_cal
+        consumed_split[meal_type] += predicted_cal  # meal_type is already lowercase
 
-        if meal_type not in ideal_meal_split:
-            return render_template('result.html', result=f"Unknown meal type received: '{meal_type}'. Please select a valid option.")
-        
-        ideal_this_meal = required_calories * ideal_meal_split[meal_type]
-        
-        # Feedback on meal
-        if total_calories > ideal_this_meal:
-           meal_feedback = f" You consumed {total_calories:.2f} kcal in {meal_type.title()}, which is above the recommended {ideal_this_meal:.2f} kcal for this meal. Consider reducing intake."
-        elif total_calories < ideal_this_meal * 0.8:
-           meal_feedback = f" Your {meal_type.title()} calories ({total_calories:.2f} kcal) are quite low compared to the recommended {ideal_this_meal:.2f} kcal. Try including more nutrient-rich food."
-        else:
-           meal_feedback = f" Your {meal_type.title()} calories ({total_calories:.2f} kcal) are within the recommended range ({ideal_this_meal:.2f} kcal)."
+        # Save prediction
+        save_prediction(username, name, predicted_cal, meal_type_cap)
 
-        # Calculate BMI
-        height_m = height / 100
-        if height_m > 0:
-          bmi = round(weight / (height_m ** 2), 2)
-        else:
-          bmi = 0
+    # STEP: Load previous meal data for the same user and date
+    # Get today's date
+    today = pd.to_datetime('today').normalize()
+    # Load existing logs
+    meal_logs = pd.read_csv('user_meal_logs.csv')
+    # Filter for current user and today's date
+    user_meals_today = meal_logs[
+    (meal_logs['Username'] == username) &
+    (pd.to_datetime(meal_logs['Date']).dt.normalize() == today)
+    ]
+    # Group and sum calories by Meal_type
+    consumed_split = user_meals_today.groupby('MealType')['Calories'].sum().to_dict()
+    # Ensure all keys are present
+    for meal in ['Breakfast', 'Lunch', 'Dinner', 'Snacks']:
+      if meal not in consumed_split:
+        consumed_split[meal] = 0.0
 
-        # Classify BMI
-        if bmi < 18.5:
-          bmi_category = "Underweight"
-        elif 18.5 <= bmi < 25:
-          bmi_category = "Normal"
-        elif 25 <= bmi < 30:
-          bmi_category = "Overweight"
-        else:
-          bmi_category = "Obese"
-        
-        # Final result text construction
-        result_text = (
-            "\n".join(found_items_display) + # Use the list for display
-            f"\n\nTotal Calories for this Meal: {total_calories:.2f} kcal" +
-            f"\nRecommended for {meal_type.title()}: {ideal_this_meal:.2f} kcal" +
-            f"\n{meal_feedback}" +
-            f"\n\nTotal Calories Today: {total_today_calories:.2f} kcal" +
-            f"\nEstimated Daily Requirement: {required_calories:.2f} kcal" +
-            f"\n\nYour BMI: {bmi:.2f} ({bmi_category})"
-        )
 
-        return render_template('result.html', result=result_text, bmi_category=bmi_category)
+    # Generate weekly graph
+    graph_path = generate_weekly_graph(username)
 
-    except Exception as e:
-        print(f"An error occurred during prediction: {e}")
-        return render_template('result.html', result=f"An unexpected error occurred: {str(e)}. Please try again or contact support.")
+    result_text = "\n".join(log_lines) + f"\n\nTotal Calories Consumed: {total_calories:.2f} kcal"
+
+    return render_template('result.html',
+                           result=result_text,
+                           graph_path=graph_path,
+                           recommended_cal=recommended_cal,
+                           recommended_split=recommended_split,
+                           consumed_split=consumed_split)
+
+
+@app.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    query = request.args.get('q', '').lower()  # Get the typed query from URL (?q=...)
+    
+    # Filter dish names that contain the query (case-insensitive)
+    suggestions = [
+        dish for dish in food_df['Dish Name'].dropna().unique().tolist()
+        if query in dish.lower()
+    ]
+
+    return jsonify(suggestions[:10])  # Return top 10 matching suggestions
+
 
 if __name__ == '__main__':
     app.run(debug=True)

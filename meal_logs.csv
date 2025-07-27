@@ -34,3 +34,60 @@ jyothi,20,dinner,chocolate ice cream,177.7,2025-07-23 11:43:38
 jyothi,20,dinner,biryani,400.0,2025-07-23 18:41:12
 shreeya,20,breakfast,upma (100g),151.27,2025-07-25 20:36:30
 shreeya,20,lunch,"rice (100g), dal (50g)",130.0,2025-07-25 20:37:12
+shreeya,20,lunch,"rice (100g), dal (100g)",231.0,2025-07-26 11:53:42
+shreeya,20,lunch,"rice (100g), dal (100g)",231.0,2025-07-26 11:56:20
+shreeya,20,lunch,"rice (160g), dal (160g)",369.6,2025-07-26 11:57:31
+shreeya,20,dinner,"rice (160g), regtfsh (50g), upma (50g)",283.635,2025-07-26 12:02:18
+shreeya,20,lunch,rice (160g),208.0,2025-07-26 12:16:16
+shreeya,20,,rice (160g),208.0,2025-07-26 12:16:56
+shreeya,20,snacks,shawarma (160g),0,2025-07-26 12:17:30
+shreeya,20,dinner,biryani (160g),640.0,2025-07-26 12:17:53
+harshitha,20,dinner,"mutton biryani (100g), chocolate cake (50g)",358.565,2025-07-26 21:09:35
+harshitha,20,breakfast,"apple (100g), banana milkshake (150g)",149.965,2025-07-27 10:44:21
+jyothi,20,breakfast,eclairs (5g),8.119,2025-07-27 10:46:12
+jyothi,20,lunch,"idli (100g), gulab jamun (100g), cornflakes (100g), Aloo toast (100g)",1677.28,2025-07-27 10:49:25
+shreeya,2025-07-27 15:29:18.539540,chinese fried rice,180.87,Lunch
+shreeya,2025-07-27 15:29:23.654662,chinese fried rice,180.87,Lunch
+shreeya,2025-07-27 15:29:52.774194,chinese fried rice,180.87,Lunch
+shreeya,2025-07-27 15:29:57.175058,chinese fried rice,180.87,Lunch
+shreeya,2025-07-27 15:58:47.897366,apple,78.0,Lunch
+shreeya,2025-07-27 15:58:53.775079,apple,78.0,Lunch
+shreeya,2025-07-27 16:01:48.238827,apple,78.0,Lunch
+shreeya,2025-07-27 16:04:34.926015,apple,78.0,Lunch
+shreeya,2025-07-27 16:07:12.074666,apple,78.0,Lunch
+shreeya,2025-07-27 16:07:38.004821,apple,78.0,Lunch
+shreeya,2025-07-27 16:08:33.264190,mutton biryani,286.14,Lunch
+shreeya,2025-07-27 16:08:46.422152,mutton biryani,286.14,Lunch
+shreeya,2025-07-27 16:14:09.336729,orange milkshake,57.42,Breakfast
+shreeya,2025-07-27 16:18:04.198821,orange milkshake,57.42,Breakfast
+shreeya,2025-07-27 16:23:29.443266,chapati,202.31,Dinner
+shreeya,2025-07-27 16:31:13.203636,chapati,202.31,Dinner
+shreeya,2025-07-27 16:34:43.847969,chapati,202.31,Dinner
+shreeya,2025-07-27 16:35:44.112212,chapati,202.31,Dinner
+shreeya,2025-07-27 16:45:21.916296,chapati,202.31,Dinner
+shreeya,2025-07-27 16:49:42.438214,chapati,202.31,Dinner
+shreeya,2025-07-27 16:53:00.807146,chapati,202.31,Dinner
+shreeya,2025-07-27 16:54:58.224188,chapati,202.31,Dinner
+vamsi,2025-07-27 16:56:59.003529,plain dosa,1142.73,Breakfast
+vamsi,2025-07-27 16:56:59.010251,ground chutney,97.47,Breakfast
+vamsi,2025-07-27 17:01:00.830384,plain dosa,1142.73,Breakfast
+vamsi,2025-07-27 17:01:00.836377,ground chutney,97.47,Breakfast
+vamsi,2025-07-27 17:01:58.461608,mutton biryani,476.9,Lunch
+vamsi,2025-07-27 17:01:58.468504,chicken biryani,262.2,Lunch
+shreeya,2025-07-27 17:07:38.150375,cornflakes with milk,58.66,Breakfast
+shreeya,2025-07-27 17:09:12.572257,curd rice,391.48,Lunch
+shreeya,2025-07-27 17:11:11.288575,chapati,202.31,Dinner
+shreeya,2025-07-27 17:14:30.812537,lemon rice,352.6,Lunch
+shreeya,2025-07-27 17:16:18.830133,chicken curry,112.58,Lunch
+shreeya,2025-07-27 17:16:18.836383,boiled rice,234.38,Lunch
+shreeya,2025-07-27 17:18:30.302434,mutton curry,500.0,Lunch
+shreeya,2025-07-27 17:22:29.597090,plain dosa,761.82,Breakfast
+shreeya,2025-07-27 17:22:29.604481,peanut chutney,258.37,Breakfast
+shreeya,2025-07-27 17:22:53.023658,plain dosa,761.82,Breakfast
+shreeya,2025-07-27 17:22:53.031158,peanut chutney,258.37,Breakfast
+shreeya,2025-07-27 17:23:44.679112,plain dosa,761.82,Breakfast
+shreeya,2025-07-27 17:23:44.683045,peanut chutney,258.37,Breakfast
+shreeya,2025-07-27 17:24:20.787212,plain dosa,380.91,Breakfast
+shreeya,2025-07-27 17:24:20.791359,peanut chutney,129.18,Breakfast
+shreeya,2025-07-27 17:25:02.752253,mutton biryani,190.76,Lunch
+shreeya,2025-07-27 17:26:10.002572,chicken biryani,262.2,Dinner

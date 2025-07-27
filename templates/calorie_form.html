@@ -187,6 +187,22 @@
     #addFoodBtn:hover {
         background-color: #218838;
     }
+    .suggestions-list {
+        border: 1px solid #ccc;
+        background-color: white;
+        position: absolute;
+        z-index: 1000;
+        max-height: 150px;
+        overflow-y: auto;
+        width: 200px;
+    }
+    .suggestions-list li {
+        padding: 5px;
+    }
+    .suggestions-list li:hover {
+        background-color: #f0f0f0;
+    } 
+
 
  </style>
 </head>
@@ -217,7 +233,9 @@
         <div class="food-item-group">
             <div class="input-wrapper">
                 <label>Food Name</label>
-                <input type="text" name="food_name" placeholder="e.g., apple" required />
+                <input type="text" name="food_name" class="food-name" autocomplete="off" placeholder="e.g., apple" required />
+                <div class="suggestions" style="border: 1px solid #ccc; background: white; position: absolute; width: 100%; z-index: 999;"></div>
+
             </div>
             <div class="input-wrapper">
                 <label>Quantity (g)</label>
@@ -244,38 +262,91 @@
     
   </main>
 
-
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const addFoodBtn = document.getElementById('addFoodBtn');
-        const foodItemsContainer = document.getElementById('food-items-container');
-        
-        // Function to create a new food item input group
-        function createFoodItemGroup() {
-            const newFoodGroup = document.createElement('div');
-            newFoodGroup.classList.add('food-item-group');
-            newFoodGroup.innerHTML = `
-                <div class="input-wrapper">
-                    <label>Food Name</label>
-                    <input type="text" name="food_name" placeholder="e.g., banana" required />
-                </div>
-                <div class="input-wrapper">
-                    <label>Quantity (g)</label>
-                    <input type="number" name="food_quantity" min="1" step="0.1" placeholder="e.g., 100" required />
-                </div>
-                <button type="button" class="remove-food-btn">X</button>
-            `;
-            foodItemsContainer.appendChild(newFoodGroup);
-
-            // Add event listener to the new remove button
-            newFoodGroup.querySelector('.remove-food-btn').addEventListener('click', function() {
-                foodItemsContainer.removeChild(newFoodGroup);
-            });
+<script>
+function attachAutocomplete(foodInput, suggestionsBox) {
+    foodInput.addEventListener('input', async function () {
+        const query = this.value.trim();
+        if (query.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
         }
 
-        addFoodBtn.addEventListener('click', createFoodItemGroup);
+        try {
+            const res = await fetch(`/autocomplete?q=${query}`);
+            const suggestions = await res.json();
+
+            suggestionsBox.innerHTML = '';
+            if (suggestions.length > 0) {
+                suggestions.forEach(item => {
+                    const div = document.createElement('div');
+                    div.textContent = item;
+                    div.style.padding = '5px';
+                    div.style.cursor = 'pointer';
+                    div.addEventListener('click', () => {
+                        foodInput.value = item;
+                        suggestionsBox.style.display = 'none';
+                    });
+                    suggestionsBox.appendChild(div);
+                });
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        } catch (err) {
+            console.error("Suggestion fetch failed:", err);
+        }
     });
-  </script>
+
+    foodInput.addEventListener('blur', function () {
+        setTimeout(() => {
+            suggestionsBox.style.display = 'none';
+        }, 200);
+    });
+}
+document.addEventListener('DOMContentLoaded', function () {
+    const addFoodBtn = document.getElementById('addFoodBtn');
+    const foodItemsContainer = document.getElementById('food-items-container');
+
+    // ✅ Attach autocomplete to initial static input
+    const initialFoodInput = document.querySelector('.food-name');
+    const initialSuggestionsBox = initialFoodInput.nextElementSibling;
+    attachAutocomplete(initialFoodInput, initialSuggestionsBox);
+
+    function createFoodItemGroup() {
+        const newFoodGroup = document.createElement('div');
+        newFoodGroup.classList.add('food-item-group');
+
+        newFoodGroup.innerHTML = `
+            <div class="input-wrapper" style="position: relative;">
+                <label>Food Name</label>
+                <input type="text" name="food_name" class="food-name" placeholder="e.g., banana" autocomplete="off" required />
+                <div class="suggestions" style="border: 1px solid #ccc; background: white; position: absolute; width: 100%; z-index: 999;"></div>
+            </div>
+            <div class="input-wrapper">
+                <label>Quantity (g)</label>
+                <input type="number" name="food_quantity" min="1" step="0.1" placeholder="e.g., 100" required />
+            </div>
+            <button type="button" class="remove-food-btn">X</button>
+        `;
+
+        foodItemsContainer.appendChild(newFoodGroup);
+
+        // ✅ Attach autocomplete to this dynamic field
+        const foodInput = newFoodGroup.querySelector('.food-name');
+        const suggestionsBox = newFoodGroup.querySelector('.suggestions');
+        attachAutocomplete(foodInput, suggestionsBox);
+
+        newFoodGroup.querySelector('.remove-food-btn').addEventListener('click', () => {
+            foodItemsContainer.removeChild(newFoodGroup);
+        });
+    }
+
+    addFoodBtn.addEventListener('click', createFoodItemGroup);
+});
+
+</script>
+
+
+
 </body>
 </html>
