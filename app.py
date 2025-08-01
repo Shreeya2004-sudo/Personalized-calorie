@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, render_template,jsonify, request, redirect, url_for, session 
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -12,8 +12,13 @@ import csv
 from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+from fill_missing_macros import fill_missing_macros
+from utils import analyze_macro_distribution,get_weekly_macros
+# Run once on startup
+fill_missing_macros()
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
 # Load your CSV
 food_df = pd.read_csv('Indian_Food_Nutrition_Processing.csv')
@@ -105,6 +110,64 @@ def generate_weekly_graph(username):
         print(f"Error generating weekly graph: {e}")
         return None
 
+def generate_macro_pie_chart(username):
+    try:
+        # Load meal logs
+        logs = pd.read_csv("user_meal_logs.csv")
+        logs.columns = logs.columns.str.strip()
+        logs["Date"] = pd.to_datetime(logs["Date"], errors='coerce')
+        logs = logs[logs["Username"] == username]
+        logs.dropna(subset=["Date"], inplace=True)
+
+        # Keep only recent 7 days or fallback
+        recent_logs = logs[logs["Date"] >= datetime.now() - timedelta(days=7)]
+        if recent_logs.empty:
+            recent_logs = logs
+        logs = recent_logs.copy()
+
+        # Load nutrition data
+        nutrition = pd.read_csv("Indian_Food_Nutrition_Filled.csv")
+        nutrition.columns = nutrition.columns.str.strip()
+
+        # Rename macros for consistency
+        nutrition.rename(columns={
+            'Carbohydrates (g)': 'Carbohydrates',
+            'Protein (g)': 'Proteins',
+            'Fats (g)': 'Fats'
+        }, inplace=True)
+
+        # Merge meal logs with nutrition info
+        merged = pd.merge(logs, nutrition, left_on='Dish', right_on='Dish Name', how='left')
+        merged[['Carbohydrates', 'Proteins', 'Fats']] = merged[['Carbohydrates', 'Proteins', 'Fats']].fillna(0)
+
+        # Calculate totals
+        total_carbs = merged["Carbohydrates"].sum()
+        total_protein = merged["Proteins"].sum()
+        total_fat = merged["Fats"].sum()
+
+        if any(pd.isna([total_carbs, total_protein, total_fat])) or (total_carbs + total_protein + total_fat) == 0:
+            raise ValueError("Macro values are invalid or empty for this user.")
+
+
+        # Plot pie chart
+        plt.figure(figsize=(5, 5))
+        plt.pie([total_carbs, total_protein, total_fat],
+                labels=["Carbohydrates", "Proteins", "Fats"],
+                autopct='%1.1f%%',
+                colors=["#FFD700", "#87CEFA", "#FF7F50"])
+        plt.title("Macronutrient Breakdown")
+
+        # Save
+        relative_path = f'macro_pie_{username}.png'
+        graph_path = f'static/{relative_path}'
+        plt.savefig(graph_path)
+        plt.close()
+        return relative_path, (total_carbs, total_protein, total_fat)
+
+
+    except Exception as e:
+        print(f"Error generating macro pie chart: {e}")
+        return None, None
 
 
 # Convert 'Calories (kcal)' to numeric on load
@@ -141,6 +204,7 @@ def calorie_form():
 @app.route('/predict', methods=['POST'])
 def predict():
     username = request.form['username']
+    session['username'] = username 
     age = int(request.form['age'])
     gender = request.form['gender']
     weight = float(request.form['weight'])
@@ -174,7 +238,8 @@ def predict():
     consumed_split = {
         "breakfast": 0,
         "lunch": 0,
-        "dinner": 0
+        "dinner": 0,
+        "snacks": 0
     }
 
     # Normalize meal_type for consistency
@@ -228,6 +293,27 @@ def predict():
                            recommended_cal=recommended_cal,
                            recommended_split=recommended_split,
                            consumed_split=consumed_split)
+
+@app.route('/generate-report', methods=['GET'])
+def generate_report():
+    username = session.get('username')
+    if not username:
+        return redirect(url_for('home'))
+
+    # Generate chart and analysis
+    pie_chart,macros = generate_macro_pie_chart(username)
+    insights = analyze_macro_distribution(username)
+
+    # You should also extract macro values from your utility function or session/db
+    total_macros = get_weekly_macros(username)  # You must have a function like this
+
+    return render_template("report.html",
+                           username=username,
+                           pie_chart=pie_chart,
+                           insights=insights,
+                           carbs=total_macros['Carbohydrates'],
+                           protein=total_macros['Proteins'],
+                           fat=total_macros['Fats'])
 
 
 @app.route('/autocomplete', methods=['GET'])
